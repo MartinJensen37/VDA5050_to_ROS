@@ -83,48 +83,35 @@ class createOrder():
     nodes: List[node] = None
 
     def return_json(self):
-        with open('../schemas/order.json', 'r', encoding='utf8') as json_file:
+        with open('test.json', 'r', encoding='utf8') as json_file:
             
             # Open json schema as a template for creating the order.
             json_object = json.load(json_file)
             json_file.close()
 
-            # First delete the schema row since we just want a regular json file to work with
-            del json_object['$schema']
-
             # Fill out the header for the order using the following parameters
-            json_object['properties']['headerId'] = self.header_id
-            json_object['properties']['orderId'] = self.order_id
-            json_object['properties']['orderUpdateId'] = self.order_update_id
-            json_object['properties']['manufacturer'] = self.manufacturer
-            json_object['properties']['serialNumber'] = self.serial_number
-            json_object['properties']['timestamp'] = datetime.datetime.now().isoformat()
+            json_object['headerId'] = self.header_id
+            json_object['orderId'] = self.order_id
+            json_object['orderUpdateId'] = self.order_update_id
+            json_object['manufacturer'] = self.manufacturer
+            json_object['serialNumber'] = self.serial_number
+            json_object['timestamp'] = datetime.datetime.now().isoformat()
             
             # Fill out the list of nodes the robot has to move through
             node_list_json = []
-            for node in self.nodes:
-                node_json = copy.deepcopy(json_object['properties']['nodes']['items'])
-                node_json['properties']['nodeId'] = node.node_id
-                node_json['properties']['sequenceId'] = node.sequence_id
-                node_json['properties']['released'] = node.released
-
+            for node, node_num in zip(self.nodes, range(0, len(self.nodes))):
+                node_dict = {'nodeId': node.node_id, 'sequenceId': node.sequence_id, 'released': node.released}
+                node_list_json.append(node_dict)
+                
                 # Fill out the list of desired actions
                 action_list_json = []
-                for action in node.action_list:
-                    action_json = copy.deepcopy(node_json['properties']['actions']['items'])
-                    action_json['properties']['actionType']= action.action_type
-                    action_json['properties']['actionId'] = action.action_id
-                    action_json['properties']['blockingType'] = action.blocking_type
-                    action_list_json.append(copy.deepcopy(action_json))
-
-                node_json['properties']['actions']['items'] = action_list_json
-
-                node_list_json.append(copy.deepcopy(node_json))
-
+                for action, action_num in zip(node.action_list, range(len(node.action_list))):                    
+                    action_dict = {'actionType': action.action_type, 'actionId': action.action_id, 'blockingType': action.blocking_type}
+                    action_list_json.append(copy.deepcopy(action_dict))
+                json_object['nodes'] = node_list_json
+                json_object['nodes'][node_num]['actions'] = action_list_json
+            return json_object
             
-            json_object['properties']['nodes']['items'] = node_list_json
-
-        return json_object
 
 class masterControl:
     """This class is used as a master control for the VDA5050 standard.
@@ -177,18 +164,14 @@ def main():
     instance_mc = masterControl()
 
 
+    order_temp = instance_mc.create_order('05', 'polybot', [node("warehouse", 0, True, [actions("1", "start"), actions("0", "stop")]), node("via_point", 1, True, [actions("2", "move")]), node("packing", 2, False, [actions("3", "wait")])])
 
-    for i in range(10):
+    out_file = open("order_test.json", "w")
+    json.dump(order_temp, out_file, indent=6)
 
-        order_temp = instance_mc.create_order('05', 'polybot', [node("warehouse", 0, True, [actions("1", "start"), actions("0", "stop")]), node("via_point", 1, True, [actions("2", "move")]), node("packing", 2, True, [actions("3", "wait")])])
+    order_out = json.dumps(order_temp)
+    instance_mc.publish_order(order_out)
 
-        out_file = open("test.json", "w")
-        json.dump(order_temp, out_file, indent=6)
-
-        order_out = json.dumps(order_temp)
-        instance_mc.publish_order(order_out)
-
-        time.sleep(1)
 
 
 if __name__ == "__main__":
