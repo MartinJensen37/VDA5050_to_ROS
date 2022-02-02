@@ -13,8 +13,6 @@ from mysqlx import DataError
 # MQTT paho specific modules
 import paho.mqtt.client as mqtt
 
-
-
 ########################## GLOBAL VARIABLES AND CONSTANTS ###########################################
 
 # These will be updated at major/minor changes e.g. x.x.0 when the x's are changing
@@ -83,7 +81,7 @@ class createOrder():
     nodes: List[node] = None
 
     def return_json(self):
-        with open('test.json', 'r', encoding='utf8') as json_file:
+        with open('../messages/order_msg.json', 'r', encoding='utf8') as json_file:
             
             # Open json schema as a template for creating the order.
             json_object = json.load(json_file)
@@ -132,7 +130,6 @@ class masterControl:
         self.header_id = 0 
         self.update_order_id = 0
 
-
     def create_order(self, serial_num = '', manufacturer = '', node_list = None):
         """This function creates an order with the following fields filled out from the schema template order.schema:
 
@@ -146,10 +143,38 @@ class masterControl:
         return crt_order.return_json()
 
     def publish_order(self, order_out):
+        """This method publishes orders to a given MQTT broker defined when an instance of the master control class is initialized.
+        Parameters
+        ----------
+        order_out : json dict
+            The message is sent as a json dict
 
-        self.mqtt_client.publish(ORDER_TOPIC, order_out)
-        print("Done!")
+        Returns
+        -------
+        integer regarding the status of the transmission:
+            MQTT_ERR_AGAIN = -1 \n
+            MQTT_ERR_SUCCESS = 0\n
+            MQTT_ERR_NOMEM = 1\n
+            MQTT_ERR_PROTOCOL = 2\n
+            MQTT_ERR_INVAL = 3\n
+            MQTT_ERR_NO_CONN = 4\n
+            MQTT_ERR_CONN_REFUSED = 5\n
+            MQTT_ERR_NOT_FOUND = 6
+            MQTT_ERR_CONN_LOST = 7\n
+            MQTT_ERR_TLS = 8\n
+            MQTT_ERR_PAYLOAD_SIZE = 9\n
+            MQTT_ERR_NOT_SUPPORTED = 10\n
+            MQTT_ERR_AUTH = 11\n
+            MQTT_ERR_ACL_DENIED = 12\n
+            MQTT_ERR_UNKNOWN = 13\n
+            MQTT_ERR_ERRNO = 14\n
+            MQTT_ERR_QUEUE_SIZE = 15\n
+            MQTT_ERR_KEEPALIVE = 16\n
+        """
+        status = self.mqtt_client.publish(ORDER_TOPIC, order_out)
         self.header_id += 1 # Every time an order is sent increment the header id regardless whether the order is received.
+
+        return status.rc
         
 
     def mqtt_cb(self):
@@ -170,8 +195,8 @@ def main():
     json.dump(order_temp, out_file, indent=6)
 
     order_out = json.dumps(order_temp)
-    instance_mc.publish_order(order_out)
-
+    status =instance_mc.publish_order(order_out)
+    print(status)
 
 
 if __name__ == "__main__":
