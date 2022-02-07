@@ -234,6 +234,7 @@ class masterControl:
             msg_list = [msg_list]
         if type(schema_list) != list:
             schema_list = [schema_list]
+    
         if from_file == True:
             for msg, schema in zip(msg_list, schema_list):
                 with open('../messages/'+msg, 'r',  encoding='utf8') as file:
