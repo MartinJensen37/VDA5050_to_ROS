@@ -1,4 +1,3 @@
-from msilib import sequence
 from master_ctrl_class import masterControl, actions, node
 import json
 import sys

@@ -1,15 +1,14 @@
-# Standard python libraries
-from distutils.log import error
+# Standard python modules
 import sys
 from dataclasses import dataclass, field
 import datetime
-import time
 import copy
-import uuid
+
+# JSON related modules
 import json
 import jsonschema
 from typing import List, Dict
-from mysqlx import DataError
+
 # MQTT paho specific modules
 import paho.mqtt.client as mqtt
 
@@ -54,7 +53,7 @@ class node():
     sequence_id: int = None
     released: bool = None
     action_list: List[actions] = None
-    node_pos: Dict[float, str] = field(default_factory=lambda: {'x': 0.0, 'y': 0.0, 'theta': 0.0, 'allowed_div_xy': 0.0, 'allowed_div_theta': 0.0, 'map_id': '', 'map_description': ''})
+    node_pos: Dict[float, str] = field(default_factory = lambda: {'x': 0.0, 'y': 0.0, 'theta': 0.0, 'allowed_div_xy': 0.0, 'allowed_div_theta': 0.0, 'map_id': '', 'map_description': ''})
     
 @dataclass
 class order():
@@ -83,7 +82,7 @@ class order():
     nodes: List[node] = None
 
     def return_json(self):
-        with open('../messages/order_msg.json', 'r', encoding='utf8') as json_file:
+        with open('../messages/order_msg.json', 'r', encoding = 'utf8') as json_file:
             
             # Open json schema as a template for creating the order.
             json_object = json.load(json_file)
@@ -149,7 +148,7 @@ class masterControl:
 
         return crt_order.return_json()
 
-    def publish_order(self, order_out, order_topic=ORDER_TOPIC): 
+    def publish_order(self, order_out, order_topic = ORDER_TOPIC): 
         """This method publishes orders to a given MQTT broker defined when an instance of the master control class is initialized.
         Parameters
         ----------
@@ -182,7 +181,7 @@ class masterControl:
             MQTT_ERR_KEEPALIVE = 16\n
         """
 
-        status = self.mqtt_client.publish(ORDER_TOPIC, order_out)
+        status = self.mqtt_client.publish(order_topic, order_out)
         self.header_id += 1 # Every time an order is sent increment the header id regardless whether the order is received.
 
         return status.rc
@@ -237,20 +236,20 @@ class masterControl:
     
         if from_file == True:
             for msg, schema in zip(msg_list, schema_list):
-                with open('../messages/'+msg, 'r',  encoding='utf8') as file:
+                with open('../messages/' + msg, 'r',  encoding = 'utf8') as file:
                     msg_data = json.load(file)
                     file.close()
-                with open('../schemas/'+schema, 'r',  encoding='utf8') as file:
+                with open('../schemas/' + schema, 'r',  encoding = 'utf8') as file:
                     schema = json.load(file)
                     file.close()
-                is_valid = jsonschema.Draft3Validator(schema=schema).is_valid(msg_data)
+                is_valid = jsonschema.Draft3Validator(schema = schema).is_valid(msg_data)
                 return is_valid
         else:
             for msg, schema in zip(msg_list, schema_list):
-                with open('../schemas/'+schema, 'r',  encoding='utf8') as file:
+                with open('../schemas/' + schema, 'r',  encoding = 'utf8') as file:
                     schema = json.load(file)
                     file.close()
-                is_valid = jsonschema.Draft3Validator(schema=schema).is_valid(msg)
+                is_valid = jsonschema.Draft3Validator(schema = schema).is_valid(msg)
                 return is_valid
 
     def save_message_json(self, msg_data = None, msg_name="default.json"):
@@ -272,7 +271,7 @@ class masterControl:
 
         out_file = open(msg_name, "w")
         print(type(msg_data))
-        json.dump(msg_data, out_file, indent=6)
+        json.dump(msg_data, out_file, indent = 6)
 
         return "success"
 
