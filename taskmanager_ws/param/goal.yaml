@@ -1,0 +1,13 @@
+# Goals will be added to this .yaml file that is then inserted into the ros parameter server where they can be easily accessed.
+# (for future update): if a node position is given in the order a new goal can be added to the yaml file.
+goal: {
+  warehouse: [0.5505943298339844, -1.7920361757278442, -0.001434326171875, 1], # [x, y, z, w]
+  packing: [0.9510265588760376, -2.012286901473999, -0.001434326171875, 1],
+  manualHandling: [1, 2, 3, 1],
+  charger: [-2.272453546524048, -0.030033795163035393, 0.002532958984375, 1], 
+  palletizer: [-0.4905296266078949, 0.5105801820755005,  0.002471923828125, 1]
+}
+
+
+
+

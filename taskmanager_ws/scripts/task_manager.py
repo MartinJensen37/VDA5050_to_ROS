@@ -288,17 +288,17 @@ class taskManager():
     
         if from_file == True:
             for msg, schema in zip(msg_list, schema_list):
-                with open('../messages/' + msg, 'r',  encoding = 'utf8') as file:
+                with open('/home/robotlab/turtlebot_ws/src/VDA5050_to_ROS//messages/' + msg, 'r',  encoding = 'utf8') as file:
                     msg_data = json.load(file)
                     file.close()
-                with open('../schemas/' + schema, 'r',  encoding = 'utf8') as file:
+                with open('/home/robotlab/turtlebot_ws/src/VDA5050_to_ROS/schemas/' + schema, 'r',  encoding = 'utf8') as file:
                     schema = json.load(file)
                     file.close()
                 is_valid = jsonschema.Draft3Validator(schema = schema).is_valid(msg_data)
                 return is_valid
         else:
             for msg, schema in zip(msg_list, schema_list):
-                with open('../schemas/' + schema, 'r',  encoding = 'utf8') as file:
+                with open('/home/robotlab/turtlebot_ws/src/VDA5050_to_ROS/schemas/' + schema, 'r',  encoding = 'utf8') as file:
                     schema = json.load(file)
                     file.close()
                 is_valid = jsonschema.Draft3Validator(schema = schema).is_valid(msg)
