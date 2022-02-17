@@ -10,9 +10,6 @@ def movebase_client(goal_id):
     client.wait_for_server()
     current_goal_pos = rospy.get_param('/goal/'+ goal_id)
 
-    action_goal = MoveBaseActionGoal()
-    action_goal.goal_id = uuid.uuid1()
-
     goal = MoveBaseGoal()
     goal.target_pose.header.frame_id = "map"
     goal.target_pose.header.stamp = rospy.Time.now()
