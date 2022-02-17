@@ -32,6 +32,10 @@ if __name__ == '__main__':
         node_list = ['warehouse', 'packing', 'manualHandling', 'charger', 'palletizer'] 
         for node in node_list:
             result = movebase_client(node)
+
+            while not(result):
+                pass
+            print("The result is in!")
             if result:
                 rospy.loginfo("Goal execution done!")
 
