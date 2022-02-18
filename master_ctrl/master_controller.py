@@ -22,9 +22,9 @@ def main():
 
     # define order/node/action properties (edges will be added later)
     node_id_list = ['warehouse', 'packing', 'manualHandling', 'charger', 'palletizer']
-    sequence_ids = [2, 3, 1, 5, 4] # Order in which the nodes have to be visited.
+    sequence_ids = range(len(node_id_list))#[2, 3, 1, 4, 5] # Order in which the nodes have to be visited.
     released_list = [True, True, True, False, False] # the corresponding release_list
-    action_type_list = [['stopPause', 'wait'],['waitForTrigger'],['wait'],['cancelOrder'],['startPause']]
+    action_type_list = [['stopPause', 'wait'],['waitForTrigger'],['wait', 'charge'],['cancelOrder'],['startPause']]
     blocking_type_list = [['HARD', 'HARD'],['HARD'],['HARD'],['SOFT'],['SOFT']]
 
     node_list = []
