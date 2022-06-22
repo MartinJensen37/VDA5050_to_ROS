@@ -34,12 +34,12 @@ class actions():
             - blockingType (only HARD is included in the types of actions in the current demo)
             - actionParameters (currently omitted for simplicity)
     """
-'''
+
     action_id: str = None
     action_type: str = None
     blocking_type: str = 'HARD'
     action_parameter: Dict[float, str] = field(default_factory = lambda: {'key': 'duration', 'value': '5'})
-'''
+
 @dataclass_json    
 @dataclass
 class edge():
