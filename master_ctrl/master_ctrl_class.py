@@ -1,6 +1,7 @@
 # Standard python modules
 import sys
 from dataclasses import dataclass, field
+from dataclasses_json import dataclass_json
 import datetime
 import copy
 
@@ -22,6 +23,8 @@ CONNECTION_TOPIC = 'IS/v0.1.0/polybot/05/connection'
 HEADER_LIST = ['headerId', 'orderId', 'orderUpdateId', 'manufacturer']
 
 ########################## CLASSES AND FUNCTION DEFINITIONS #########################################
+
+@dataclass_json    
 @dataclass
 class actions():
     """This class constructs the action list element in the json message 
@@ -31,11 +34,20 @@ class actions():
             - blockingType (only HARD is included in the types of actions in the current demo)
             - actionParameters (currently omitted for simplicity)
     """
-
+'''
     action_id: str = None
     action_type: str = None
     blocking_type: str = 'HARD'
+    action_parameter: Dict[float, str] = field(default_factory = lambda: {'key': 'duration', 'value': '5'})
+'''
+@dataclass_json    
+@dataclass
+class edge():
+    edge_id: str = None
+    sequence_id: str = None
+    released: bool = None
 
+@dataclass_json    
 @dataclass
 class node():
     """This class constructs the node list element in the json message
@@ -54,7 +66,8 @@ class node():
     released: bool = None
     action_list: List[actions] = None
     node_pos: Dict[float, str] = field(default_factory = lambda: {'x': 0.0, 'y': 0.0, 'theta': 0.0, 'allowed_div_xy': 0.0, 'allowed_div_theta': 0.0, 'map_id': '', 'map_description': ''})
-    
+
+@dataclass_json    
 @dataclass
 class order():
     """This class constructs an order with the following fields filled out from the schema template order.schema:
@@ -74,12 +87,16 @@ class order():
                 - edge (omitted since we only have 1 node)
     """
 
-    header_id: int = None
-    order_id: str = None
-    order_update_id: int = None
-    serial_number:str = None
+    headerId: int = None
+    orderId: str = None
+    orderUpdateId: int = None
+    serialNumber:str = None
     manufacturer: str = None
+    timestamp: str = None
+    version: str = None
+    zoneSetId: str = None
     nodes: List[node] = None
+    edges: List[edge] = None
 
     def return_json(self):
         with open('../messages/order_msg.json', 'r', encoding = 'utf8') as json_file:
@@ -95,7 +112,7 @@ class order():
             json_object['manufacturer'] = self.manufacturer
             json_object['serialNumber'] = self.serial_number
             json_object['timestamp'] = datetime.datetime.now().isoformat()
-            
+
             # Fill out the list of nodes the robot has to move through
             node_list_json = []
             for node, node_num in zip(self.nodes, range(0, len(self.nodes))):
@@ -129,7 +146,6 @@ class masterControl:
 
         # initialize IDs for tracking orders and messages
         self.order_id = ''
-        self.order_id_backlog = []
         self.header_id = 0 
         self.update_order_id = 0
 
@@ -280,15 +296,24 @@ class masterControl:
 def main():
 
     print("NOTICE: The class is being run directly from the class file")
-    instance_mc = masterControl()
+    #instance_mc = masterControl()
 
-    order_temp = instance_mc.create_order('test', '05', 'polybot', [node("warehouse", 0, True, [actions("1", "start"), actions("0", "stop")]), node("via_point", 1, True, [actions("2", "move")]), node("packing", 2, False, [actions("3", "wait")])])
+    #order_temp = instance_mc.create_order('test', '05', 'polybot', [node("warehouse", 0, True, [actions("1", "start"), actions("0", "stop")]), node("via_point", 1, True, [actions("2", "move")]), node("packing", 2, False, [actions("3", "wait")])])
 
-    order_out = json.dumps(order_temp) # Convert JSON dict to JSON string that can later be loaded as a dict in the task manager
-    instance_mc.save_message_json(order_temp, '../messages/checkJson.json')
-    check_message = instance_mc.verify_message('checkJson.json', 'order.schema')
-    status =instance_mc.publish_order(order_out) # Publish the order
-    print(check_message) # print the status regarding the message.
+    #order_out = json.dumps(order_temp) # Convert JSON dict to JSON string that can later be loaded as a dict in the task manager
+    #instance_mc.save_message_json(order_temp, '../messages/checkJson.json')
+    #check_message = instance_mc.verify_message('checkJson.json', 'order.schema')
+    #status =instance_mc.publish_order(order_out) # Publish the order
+    #print(check_message) # print the status regarding the message.
+
+    
+    with open('../messages/order_msg.json', 'r', encoding = 'utf8') as json_file:
+        json_object = json.load(json_file)
+        json_file.close()
+    order_json = order(**json_object)
+    
+    print(order_json.nodes[0]["actions"])
+
 
 
 if __name__ == "__main__":
