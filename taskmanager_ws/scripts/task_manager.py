@@ -75,6 +75,7 @@ class actionState():
     action_id: str = None
     action_type: str = None
     action_status: str = None # waiting, initializing, running, finished and failed
+    action_parameter: Dict[str, float] = field(default_factory= lambda: {'key': '', 'value': ''})
 
 @dataclass
 class batteryState():
@@ -94,12 +95,13 @@ class state():
     last_node_sequence_id = None
     driving: bool = True
     operating_mode: str = None # (Enum) only certain strings are accepted.
+    battery_states: batteryState = None
     velocity: Dict[float, str] = field(default_factory = lambda: {'vx': 0.0, 'vy': 0.0, 'omega': 0.0})
     agv_position: Dict[float, str] = field(default_factory = lambda: {'x': 0.0, 'y': 0.0, 'theta': 0.0, 'map_id': '', 'map_description': '', "positionInitialized": True, "localizationScore":0.0, "deviationRange":0.0})
     node_states: List[nodeState] = None
     edge_states: List[edgeState] = None
     action_states: List[actionState] = None
-    battery_states: List[batteryState] = None
+    
 
 class taskManager():
 
@@ -127,7 +129,6 @@ class taskManager():
         self.order_update_id = 0
         self.order_active = True # boolean
         self.header_id = 0 # This value is incremented every time a message is sent but is reset when the program is restarted
-        self.action_status = ACTION_WAITING
         self.wait_trigger = False
 
         # create the classes for storing all robot state information
@@ -144,6 +145,7 @@ class taskManager():
         self.state.velocity['vx'] = data.twist.twist.linear.x
         self.state.velocity['vy'] = data.twist.twist.linear.y
         self.state.velocity['omega'] = data.twist.twist.angular.z
+        print("new update to state!")
 
     def robot_feedback(self, data):
         pass
@@ -165,11 +167,11 @@ class taskManager():
         rospy.Subscriber('/' + manufacturer + '/' + serial_no + '/move_base/feedback', MoveBaseActionFeedback, callback=self.robot_feedback, queue_size=None)
         rospy.Subscriber('/' + manufacturer + '/' + serial_no + '/odom', Odometry, callback=self.robot_odom, queue_size=None)
 
-    def publish_goal(self):
+    def publish_goal(self, node_id):
         client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
         client.wait_for_server()
         
-        current_goal_pos = rospy.get_param('/goal/'+ self.state.node_states[0]['nodeId'])
+        current_goal_pos = rospy.get_param('/goal/'+ node_id)
 
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
@@ -181,6 +183,7 @@ class taskManager():
 
         client.send_goal(goal)
         wait = client.wait_for_result()
+        
         if not wait:
             rospy.logerr("Action server not available!")
             rospy.signal_shutdown("Action server not available!")
@@ -208,7 +211,7 @@ class taskManager():
         
             action_state_temp = []
             for action in node.actions:                    
-                action_dict = {'actionType': action.actionType, 'actionId': action.actionId, 'actionStatus': self.state.action_states}
+                action_dict = {'actionType': action.actionType, 'actionId': action.actionId, 'actionStatus': ACTION_WAITING}
                 action_state_temp.append(copy.deepcopy(action_dict))
             action_states_temp.append(action_state_temp)
 
@@ -223,15 +226,16 @@ class taskManager():
 
         self.state.operating_mode = 'SEMIAUTOMATIC' # when the velocity is not defined by edges or setZone the velocity is controlled locally on the robot
 
-        while self.state.node_states != []:
-            result = self.publish_goal()
-            while not(result):
+        while order.nodes != []:
+            result = self.publish_goal(order.nodes[0].nodeId)
+            while not(result): # wait for move_base to report back whether the goal is reached
                 pass
-            
-            rospy.loginfo("Finished moving to node: " + self.state.node_states[0]['nodeId'])
-            for action_num in range(len(self.state.action_states[0])):
-                action_type = self.state.action_states[0][action_num]['actionType']
-                self.state.action_states[0][action_num]['actionStatus'] = ACTION_RUNNING 
+
+            rospy.loginfo("Finished moving to node: " + order.nodes[0].nodeId)
+            for action_num in range(len(order.nodes[0].actions)):
+                action_type = order.nodes[0].actions[action_num].actionType
+                self.state.action_states[order.nodes][action_num]['actionStatus'] = ACTION_RUNNING
+
                 if action_type == 'waitForTrigger':
                     self.wait_trigger = True
                     rospy.loginfo("Waiting for trigger!")
@@ -240,7 +244,7 @@ class taskManager():
 
                 elif action_type == 'wait':
                     rospy.loginfo("Waiting for set time!")
-                    self.wait_time()
+                    self.wait_time(order.nodes[0].actions[action_num].actionParameter)
 
                 elif action_type == 'cancelOrder':
                     rospy.loginfo("Order cancelled!")
@@ -259,12 +263,11 @@ class taskManager():
                     self.charge()
 
                 self.state.action_states[0][action_num]['actionStatus'] = ACTION_FINISHED
-
-            rospy.loginfo("Actions for node: " + self.state.node_states[0]['nodeId'] + " done! Moving to next node!")
+            rospy.loginfo("Actions for node: " + order.nodes[0].nodeId + " done! Moving to next node!")
             # clear the node from nodeStates
             # USE list.pop(0) to remove the first element of the list clear nodes and actions are removed from the state
-            self.state.action_states.pop(0)
-            self.state.node_states.pop(0)
+            #order.nodes[0].actions.pop(0)
+            order.nodes.pop(0)
 
         rospy.loginfo("The order has been successfully executed!")
 
